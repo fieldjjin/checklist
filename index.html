@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 디지털 수업설계 체크리스트</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- html2canvas for PNG Export -->
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    
+    <style>
+        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+            background-color: #f1f5f9; /* Slate-100 */
+        }
+        /* 프린트/캡처용 영역 최적화 */
+        #capture-area {
+            background-color: white;
+        }
+        textarea {
+            resize: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useRef, useEffect } = React;
+
+        const CHECKLIST_DATA = [
+            {
+                id: 'goal',
+                title: '🎯 목표 정합성',
+                colorClass: 'border-blue-500',
+                bgLight: 'bg-blue-50',
+                textDark: 'text-blue-800',
+                questions: [
+                    '학습목표와 활동이 직접 연결되는가?',
+                    '평가가 학습목표 달성 여부를 확인하는가?',
+                    '목표-활동-평가가 일관되게 설계되었는가?',
+                    '이 활동이 목표 달성에 꼭 필요한가?',
+                    '핵심 개념(Big Idea)이 디지털 활동을 통해 명확히 드러나는가?',
+                    '성취기준을 넘어서는 불필요한 인지적 부하를 유발하지 않는가?'
+                ],
+                causes: [
+                    '성취기준 분석 미흡',
+                    '활동 중심적 사고 (목표보다 활동이 우선됨)',
+                    '디지털 도구 사용 자체를 목표로 오인',
+                    '루브릭 등 구체적 평가 기준 부재'
+                ],
+                insightTip: "학습 목표가 불명확하거나 활동이 목표를 벗어날 경우, AI 도구 사용 자체가 목적이 될 위험이 있습니다. 평가 루브릭을 먼저 설계(백워드 설계)해 보는 것을 추천합니다."
+            },
+            {
+                id: 'ai',
+                title: '🤖 AI·디지털 도구 적절성',
+                colorClass: 'border-purple-500',
+                bgLight: 'bg-purple-50',
+                textDark: 'text-purple-800',
+                questions: [
+                    'AI·디지털 도구가 학생의 사고를 확장하는가?',
+                    '도구가 학습 과정의 변화를 이끄는가?',
+                    'AI가 꼭 필요한 역할을 수행하는가?',
+                    '단순 편의 기능에 머물지는 않는가?',
+                    '도구의 접근성 및 학생들의 디지털 리터러시 수준을 고려했는가?',
+                    '학습 데이터 보안 및 윤리적 사용(저작권, 환각 현상 등)에 대한 안내가 포함되었는가?'
+                ],
+                causes: [
+                    '도구의 기능적 특성에 대한 이해 부족',
+                    '단순 대체(Substitution) 수준의 활용',
+                    '학생의 디지털 기기 접근성 및 활용 능력 과대평가',
+                    'AI 윤리 및 데이터 프라이버시 고려 누락'
+                ],
+                insightTip: "단순 정보 검색이나 흥미 유발을 넘어, 학생이 혼자서는 도달하기 어려운 수준의 사고(분석, 종합, 평가)를 하도록 AI가 '비계(Scaffolding)' 역할을 하는지 점검해 보세요."
+            },
+            {
+                id: 'participation',
+                title: '👥 학생 참여 구조',
+                colorClass: 'border-green-500',
+                bgLight: 'bg-green-50',
+                textDark: 'text-green-800',
+                questions: [
+                    '모든 학생이 역할을 가지고 참여하는가?',
+                    '개인→협력→공유 구조가 설계되었는가?',
+                    '학생 간 상호작용이 자연스럽게 일어나는가?',
+                    '학생의 주도적인 의사결정 기회가 있는가?',
+                    '소외되거나 무임승차하는 학생을 방지할 장치가 마련되어 있는가?',
+                    '온/오프라인 환경을 넘나드는 유연한 협업이 가능한가?'
+                ],
+                causes: [
+                    '개별 역할 부여 및 책임 소재 불명확',
+                    '교사 주도적 일방향 설명 위주의 설계',
+                    '디지털 환경에서의 상호작용 방식(댓글, 동시편집 등) 설계 누락',
+                    '학생 맞춤형 수준별 활동 경로 부재'
+                ],
+                insightTip: "디지털 환경에서는 무임승차가 발생하기 쉽습니다. 개별 산출물을 모아 모둠 산출물로 완성하는 직소(Jigsaw) 모형이나 클라우드 동시 문서 작업을 활용해 상호의존성을 높여보세요."
+            },
+            {
+                id: 'evaluation',
+                title: '📊 과정중심평가',
+                colorClass: 'border-orange-500',
+                bgLight: 'bg-orange-50',
+                textDark: 'text-orange-800',
+                questions: [
+                    '학습 과정이 기록으로 남는가?',
+                    '학습데이터가 피드백과 평가에 활용되는가?',
+                    '학생이 피드백을 반영하여 수정할 기회가 있는가?',
+                    '평가 결과가 다음 학습으로 이어지는가?',
+                    '학생의 자기평가 및 동료평가가 평가 체계에 포함되어 있는가?',
+                    '대시보드 등 AI 분석 결과를 활용하여 적시에 개별화된 피드백이 제공되는가?'
+                ],
+                causes: [
+                    '결과물 중심의 총괄평가 관점 유지',
+                    '학습 과정 데이터 수집 방법 및 도구 부재',
+                    '형성평가 결과를 수업에 환류(Feedback)하는 시간 확보 실패',
+                    '학생 스스로 성찰할 수 있는 질문이나 루브릭 부족'
+                ],
+                insightTip: "에듀테크 도구의 대시보드 기능을 활용하여 학생들의 형성평가 데이터를 수집하고, 피드백 이후 '수정(Revision)' 단계를 수업 내에 명시적으로 확보하는 것이 중요합니다."
+            },
+            {
+                id: 'inquiry',
+                title: '🔍 탐구 과정',
+                colorClass: 'border-teal-500',
+                bgLight: 'bg-teal-50',
+                textDark: 'text-teal-800',
+                questions: [
+                    '학생이 스스로 질문을 생성하고 탐구하는가?',
+                    '데이터를 수집·분석하여 근거를 도출하는가?',
+                    '결과보다 탐구 과정과 사고가 드러나는가?',
+                    '탐구 결과를 성찰하고 새로운 질문으로 확장하는가?',
+                    'AI가 제공한 정보나 답변을 비판적으로 검토(팩트체크)하는 과정이 있는가?',
+                    '실생활의 복잡한 문제(Real-world problem)와 연결되어 있는가?'
+                ],
+                causes: [
+                    '정답 찾기 위주의 수렴적 질문 설계',
+                    '정보 검색에 그치고 분석/종합 단계 생략',
+                    'AI의 답변을 맹신하거나 그대로 복사/붙여넣기 허용',
+                    '탐구 맥락이 학생의 실생활과 동떨어짐'
+                ],
+                insightTip: "AI가 답을 바로 주지 않도록 프롬프트 활용 규칙을 정하고, 학생이 도출한 결론에 대해 '왜 그렇게 생각하는가?'를 논리적으로 설명하는 과정에 초점을 맞추세요."
+            }
+        ];
+
+        function App() {
+            // State: 0 (Login), 1 (Form), 2 (Loading), 3 (Result)
+            const [step, setStep] = useState(0);
+            
+            // User Info
+            const [userInfo, setUserInfo] = useState({ school: '', name: '' });
+            
+            // Lesson Info
+            const [lessonInfo, setLessonInfo] = useState({ title: '', grade: '', unit: '' });
+            
+            // Checklist State (Stores checked status, notes, and cause)
+            const [checklist, setChecklist] = useState(() => {
+                const initialState = {};
+                CHECKLIST_DATA.forEach(cat => {
+                    initialState[cat.id] = {
+                        checked: Array(cat.questions.length).fill(false),
+                        notes: '',
+                        cause: ''
+                    };
+                });
+                return initialState;
+            });
+
+            // Handlers
+            const handleUserInfoChange = (e) => {
+                setUserInfo({ ...userInfo, [e.target.name]: e.target.value });
+            };
+
+            const handleLessonInfoChange = (e) => {
+                setLessonInfo({ ...lessonInfo, [e.target.name]: e.target.value });
+            };
+
+            const handleCheckToggle = (catId, qIndex) => {
+                setChecklist(prev => {
+                    const newCat = { ...prev[catId] };
+                    newCat.checked[qIndex] = !newCat.checked[qIndex];
+                    return { ...prev, [catId]: newCat };
+                });
+            };
+
+            const handleNotesChange = (catId, value) => {
+                setChecklist(prev => ({
+                    ...prev,
+                    [catId]: { ...prev[catId], notes: value }
+                }));
+            };
+
+            const handleCauseChange = (catId, value) => {
+                setChecklist(prev => ({
+                    ...prev,
+                    [catId]: { ...prev[catId], cause: value }
+                }));
+            };
+
+            const startChecklist = (e) => {
+                e.preventDefault();
+                if(userInfo.school && userInfo.name) setStep(1);
+            };
+
+            const submitChecklist = () => {
+                setStep(2); // Show Loading
+                setTimeout(() => {
+                    setStep(3); // Show Result after mock processing
+                }, 1500);
+            };
+
+            if (step === 0) {
+                return (
+                    <div className="min-h-screen flex items-center justify-center p-4">
+                        <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-8 border-t-8 border-indigo-600">
+                            <div className="text-center mb-8">
+                                <h1 className="text-2xl font-bold text-gray-800 mb-2">AI 디지털 수업설계</h1>
+                                <p className="text-gray-500">튜닝 프로토콜 체크리스트</p>
+                            </div>
+                            <form onSubmit={startChecklist} className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">학교명</label>
+                                    <input 
+                                        type="text" 
+                                        name="school"
+                                        required
+                                        placeholder="예: 한국중학교"
+                                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                                        value={userInfo.school}
+                                        onChange={handleUserInfoChange}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">선생님 성함</label>
+                                    <input 
+                                        type="text" 
+                                        name="name"
+                                        required
+                                        placeholder="예: 홍길동"
+                                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                                        value={userInfo.name}
+                                        onChange={handleUserInfoChange}
+                                    />
+                                </div>
+                                <button 
+                                    type="submit"
+                                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg transition-colors mt-6"
+                                >
+                                    체크리스트 시작하기
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                );
+            }
+
+            if (step === 1) {
+                return (
+                    <div className="min-h-screen pb-20">
+                        {/* Header */}
+                        <header className="bg-white shadow-sm sticky top-0 z-10">
+                            <div className="max-w-5xl mx-auto px-4 py-4 flex justify-between items-center">
+                                <h1 className="text-xl font-bold text-gray-800">수업설계 튜닝 프로토콜</h1>
+                                <div className="text-sm text-gray-600 font-medium bg-gray-100 px-3 py-1 rounded-full">
+                                    {userInfo.school} {userInfo.name} 선생님
+                                </div>
+                            </div>
+                        </header>
+
+                        <main className="max-w-5xl mx-auto px-4 py-8 space-y-8">
+                            {/* Instruction Area */}
+                            <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-5 shadow-sm text-indigo-900">
+                                <h3 className="font-bold text-lg mb-2 flex items-center">
+                                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    작성 가이드
+                                </h3>
+                                <ul className="list-disc pl-5 space-y-1 text-sm">
+                                    <li>AI 디지털 수업 설계안에서 <strong>이미 잘 나타나는 부분</strong>은 체크(✅)해 주세요.</li>
+                                    <li><strong>체크하지 않은 항목(취약 항목)</strong>을 중심으로 다시 수업을 설계해 보세요.</li>
+                                    <li>오른쪽 패널에서 취약 항목의 원인(개념 이해 부족 / 설계 누락 / 맥락 불일치 등)을 선택하고, 수업 설계 수정 아이디어를 구체적으로 입력하세요.</li>
+                                </ul>
+                            </div>
+
+                            {/* Lesson Info Section */}
+                            <section className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                                <h2 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">기본 수업 정보</h2>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-600 mb-1">수업명</label>
+                                        <input type="text" name="title" placeholder="예: 스노클을 활용한 태양의 일주 운동" value={lessonInfo.title} onChange={handleLessonInfoChange} className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-indigo-400 outline-none" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-600 mb-1">대상</label>
+                                        <input type="text" name="grade" placeholder="예: 중학교 2학년" value={lessonInfo.grade} onChange={handleLessonInfoChange} className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-indigo-400 outline-none" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-600 mb-1">단원</label>
+                                        <input type="text" name="unit" placeholder="예: 별과 우주" value={lessonInfo.unit} onChange={handleLessonInfoChange} className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-indigo-400 outline-none" />
+                                    </div>
+                                </div>
+                            </section>
+
+                            {/* Checklist Sections */}
+                            <div className="space-y-6">
+                                {CHECKLIST_DATA.map((cat) => (
+                                    <section key={cat.id} className={`bg-white rounded-r-xl shadow-sm border-l-4 ${cat.colorClass} overflow-hidden`}>
+                                        <div className={`px-4 py-3 ${cat.bgLight} border-b border-gray-100`}>
+                                            <h3 className={`font-bold text-lg ${cat.textDark}`}>{cat.title}</h3>
+                                        </div>
+                                        <div className="p-0 flex flex-col md:flex-row">
+                                            {/* Questions Column */}
+                                            <div className="flex-1 p-5 border-b md:border-b-0 md:border-r border-gray-100 space-y-3">
+                                                {cat.questions.map((q, qIndex) => (
+                                                    <label key={qIndex} className="flex items-start space-x-3 cursor-pointer group">
+                                                        <div className="flex-shrink-0 mt-0.5">
+                                                            <input 
+                                                                type="checkbox" 
+                                                                className={`w-5 h-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer`}
+                                                                checked={checklist[cat.id].checked[qIndex]}
+                                                                onChange={() => handleCheckToggle(cat.id, qIndex)}
+                                                            />
+                                                        </div>
+                                                        <span className={`text-gray-700 leading-snug group-hover:text-gray-900 ${checklist[cat.id].checked[qIndex] ? 'font-medium' : ''}`}>
+                                                            {q}
+                                                        </span>
+                                                    </label>
+                                                ))}
+                                            </div>
+                                            {/* Notes Column */}
+                                            <div className="flex-1 p-5 bg-gray-50 flex flex-col space-y-4">
+                                                {/* Cause Analysis Selection */}
+                                                <div>
+                                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                                        🤔 취약 항목 원인 분석
+                                                    </label>
+                                                    <select 
+                                                        className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-400 outline-none text-sm text-gray-700 bg-white"
+                                                        value={checklist[cat.id].cause}
+                                                        onChange={(e) => handleCauseChange(cat.id, e.target.value)}
+                                                    >
+                                                        <option value="">원인을 선택해주세요</option>
+                                                        {cat.causes.map((cause, idx) => (
+                                                            <option key={idx} value={cause}>{cause}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+
+                                                <div className="flex-1 flex flex-col">
+                                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                                        💡 수업 설계 수정 아이디어 입력
+                                                    </label>
+                                                    <textarea 
+                                                        placeholder="체크되지 않은 항목(취약 항목)을 바탕으로 수업 설계를 어떻게 수정하고 보완할지 구체적인 아이디어를 자유롭게 메모하세요."
+                                                        className="w-full flex-1 p-3 border border-gray-200 rounded-md focus:ring-2 focus:ring-indigo-400 outline-none text-sm text-gray-700 bg-white min-h-[120px]"
+                                                        value={checklist[cat.id].notes}
+                                                        onChange={(e) => handleNotesChange(cat.id, e.target.value)}
+                                                    ></textarea>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </section>
+                                ))}
+                            </div>
+
+                            {/* Submit Area */}
+                            <div className="flex justify-center pt-6">
+                                <button 
+                                    onClick={submitChecklist}
+                                    className="bg-gray-900 hover:bg-black text-white font-bold py-4 px-12 rounded-full shadow-lg transition-transform transform hover:-translate-y-1 text-lg flex items-center space-x-2"
+                                >
+                                    <span>분석 및 인사이트 리포트 생성</span>
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                                </button>
+                            </div>
+                        </main>
+                    </div>
+                );
+            }
+
+            if (step === 2) {
+                return (
+                    <div className="min-h-screen flex flex-col items-center justify-center p-4 space-y-4">
+                        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-indigo-600"></div>
+                        <h2 className="text-xl font-bold text-gray-700 animate-pulse">작성하신 내용을 바탕으로 인사이트를 도출하고 있습니다...</h2>
+                        <p className="text-gray-500">잠시만 기다려주세요.</p>
+                    </div>
+                );
+            }
+
+            return <ResultScreen userInfo={userInfo} lessonInfo={lessonInfo} checklist={checklist} setStep={setStep} />;
+        }
+
+        function ResultScreen({ userInfo, lessonInfo, checklist, setStep }) {
+            const reportRef = useRef(null);
+            const [isExporting, setIsExporting] = useState(false);
+
+            const generateInsight = (cat) => {
+                const checkedCount = checklist[cat.id].checked.filter(Boolean).length;
+                const notesLength = checklist[cat.id].notes.trim().length;
+                
+                // 간단한 휴리스틱 로직으로 피드백 제공 (AI 시뮬레이션)
+                let feedbackMsg = "";
+                
+                if (notesLength > 0) {
+                    feedbackMsg = `선생님께서 메모하신 보완점들을 잘 반영한다면 더욱 훌륭한 수업이 될 것입니다. 추가적인 팁을 드리자면, ${cat.insightTip}`;
+                } else if (checkedCount === cat.questions.length) {
+                    feedbackMsg = `모든 항목이 잘 설계되었습니다! 완벽합니다. 지속적인 유지를 위해: ${cat.insightTip}`;
+                } else if (checkedCount >= 2) {
+                    feedbackMsg = `무난하게 설계되고 있습니다. 체크되지 않은 항목들을 중심으로 보완해 보세요. ${cat.insightTip}`;
+                } else {
+                    feedbackMsg = `이 영역에 대한 설계 보완이 필요해 보입니다. 다음 인사이트를 참고해 보세요: ${cat.insightTip}`;
+                }
+                return feedbackMsg;
+            };
+
+            const downloadPNG = async () => {
+                setIsExporting(true);
+                const element = reportRef.current;
+                
+                // 약간의 딜레이를 주어 렌더링 안정화
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                try {
+                    const canvas = await html2canvas(element, {
+                        scale: 2, // 고해상도
+                        useCORS: true,
+                        backgroundColor: '#ffffff'
+                    });
+                    
+                    const image = canvas.toDataURL("image/png", 1.0);
+                    const link = document.createElement('a');
+                    link.download = `[수업설계]_${userInfo.name}선생님_${lessonInfo.title || '리포트'}.png`;
+                    link.href = image;
+                    link.click();
+                } catch (err) {
+                    console.error("Export failed", err);
+                    alert("이미지 저장에 실패했습니다. 다시 시도해주세요.");
+                } finally {
+                    setIsExporting(false);
+                }
+            };
+
+            return (
+                <div className="min-h-screen flex flex-col pb-20">
+                    {/* Top Action Bar */}
+                    <div className="bg-gray-900 text-white p-4 sticky top-0 z-50 shadow-md flex justify-between items-center">
+                        <button onClick={() => setStep(1)} className="text-gray-300 hover:text-white flex items-center text-sm">
+                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path></svg>
+                            수정하기
+                        </button>
+                        <button 
+                            onClick={downloadPNG} 
+                            disabled={isExporting}
+                            className={`bg-indigo-500 hover:bg-indigo-600 px-4 py-2 rounded-md font-bold flex items-center text-sm transition-colors ${isExporting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                            {isExporting ? '이미지 생성중...' : 'PNG로 저장하기'}
+                        </button>
+                    </div>
+
+                    {/* Capturable Report Area */}
+                    <main className="max-w-4xl mx-auto w-full p-4 mt-6">
+                        <div id="capture-area" ref={reportRef} className="bg-white p-8 md:p-12 shadow-2xl rounded-sm">
+                            
+                            {/* Report Header */}
+                            <div className="border-b-4 border-indigo-900 pb-6 mb-8">
+                                <div className="flex justify-between items-end mb-4">
+                                    <h1 className="text-3xl font-extrabold text-gray-900">AI 디지털 수업설계 튜닝 리포트</h1>
+                                    <div className="text-right">
+                                        <p className="text-gray-500 text-sm">{new Date().toLocaleDateString('ko-KR')}</p>
+                                        <p className="font-bold text-gray-800">{userInfo.school} {userInfo.name} 선생님</p>
+                                    </div>
+                                </div>
+                                <div className="bg-gray-50 p-4 rounded-lg flex flex-wrap gap-4 md:gap-8">
+                                    <div>
+                                        <span className="block text-xs text-gray-500 font-bold uppercase">수업명</span>
+                                        <span className="text-lg font-semibold text-indigo-900">{lessonInfo.title || '미입력'}</span>
+                                    </div>
+                                    <div>
+                                        <span className="block text-xs text-gray-500 font-bold uppercase">대상</span>
+                                        <span className="text-base font-medium text-gray-800">{lessonInfo.grade || '미입력'}</span>
+                                    </div>
+                                    <div>
+                                        <span className="block text-xs text-gray-500 font-bold uppercase">단원</span>
+                                        <span className="text-base font-medium text-gray-800">{lessonInfo.unit || '미입력'}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Report Content - Categories */}
+                            <div className="space-y-8">
+                                {CHECKLIST_DATA.map(cat => {
+                                    const state = checklist[cat.id];
+                                    const checkedCount = state.checked.filter(Boolean).length;
+                                    const progress = (checkedCount / cat.questions.length) * 100;
+
+                                    return (
+                                        <div key={cat.id} className="break-inside-avoid">
+                                            <div className={`border-l-4 ${cat.colorClass} pl-4 mb-4`}>
+                                                <h2 className={`text-xl font-bold ${cat.textDark} flex items-center justify-between`}>
+                                                    {cat.title}
+                                                    <span className="text-sm font-medium bg-gray-100 px-2 py-1 rounded text-gray-600">
+                                                        {checkedCount} / {cat.questions.length} 체크
+                                                    </span>
+                                                </h2>
+                                                
+                                                {/* Progress Bar */}
+                                                <div className="w-full bg-gray-200 rounded-full h-1.5 mt-2">
+                                                    <div className={`h-1.5 rounded-full ${cat.colorClass.replace('border-', 'bg-')}`} style={{ width: `${progress}%` }}></div>
+                                                </div>
+                                            </div>
+
+                                            <div className="pl-5 grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                {/* Notes and Insights */}
+                                                <div className="space-y-3">
+                                                    <div className="bg-yellow-50 border border-yellow-100 p-3 rounded-lg text-sm">
+                                                        <h4 className="font-bold text-yellow-800 mb-2 flex items-center">
+                                                            <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20"><path d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM15.657 5.757a1 1 0 00-1.414-1.414l-.707.707a1 1 0 001.414 1.414l.707-.707zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zM5.05 6.464A1 1 0 106.464 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zM5 10a1 1 0 01-1 1H3a1 1 0 110-2h1a1 1 0 011 1zM8 16v-1h4v1a2 2 0 11-4 0zM12 14c.015-.34.208-.646.477-.859a4 4 0 10-4.954 0c.27.213.462.519.476.859h4.002z"></path></svg>
+                                                            수업 설계 수정 아이디어
+                                                        </h4>
+                                                        {state.cause && (
+                                                            <div className="mb-3 flex items-center bg-white w-fit px-2 py-1 rounded border border-yellow-200">
+                                                                <span className="text-yellow-700 text-xs font-bold mr-2">취약 원인</span>
+                                                                <span className="font-semibold text-yellow-900 text-xs">{state.cause}</span>
+                                                            </div>
+                                                        )}
+                                                        <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
+                                                            {state.notes ? state.notes : <span className="text-gray-400 italic">작성된 수정 아이디어가 없습니다.</span>}
+                                                        </p>
+                                                    </div>
+                                                    
+                                                    <div className={`p-3 rounded-lg text-sm ${cat.bgLight} border border-opacity-20 ${cat.colorClass}`}>
+                                                        <h4 className={`font-bold ${cat.textDark} mb-1 flex items-center`}>
+                                                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                                            맞춤형 인사이트
+                                                        </h4>
+                                                        <p className="text-gray-800 leading-relaxed">
+                                                            {generateInsight(cat)}
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                {/* Unchecked Items to Focus On */}
+                                                <div>
+                                                    <h4 className="text-sm font-bold text-gray-600 mb-2 border-b pb-1">재검토가 필요한 항목 (미체크)</h4>
+                                                    <ul className="space-y-2">
+                                                        {cat.questions.map((q, idx) => {
+                                                            if (!state.checked[idx]) {
+                                                                return (
+                                                                    <li key={idx} className="flex items-start text-sm text-gray-500">
+                                                                        <svg className="w-4 h-4 mr-1.5 mt-0.5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 12H6"></path></svg>
+                                                                        {q}
+                                                                    </li>
+                                                                );
+                                                            }
+                                                            return null;
+                                                        })}
+                                                        {checkedCount === cat.questions.length && (
+                                                            <li className="text-sm text-green-600 flex items-center bg-green-50 p-2 rounded">
+                                                                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+                                                                모든 항목이 체크되었습니다.
+                                                            </li>
+                                                        )}
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Footer */}
+                            <div className="mt-12 text-center text-gray-400 text-xs border-t pt-4">
+                                본 리포트는 AI 디지털 교과서 및 에듀테크 활용 수업 설계를 위한 튜닝 프로토콜에 기반하여 작성되었습니다.
+                            </div>
+                        </div>
+                    </main>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
